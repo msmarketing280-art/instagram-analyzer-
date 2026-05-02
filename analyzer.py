@@ -1,5 +1,5 @@
 import json
-import google.generativeai as genai
+from google import genai
 
 
 SYSTEM_PROMPT = """Você é um especialista em marketing digital e criação de conteúdo para Instagram.
@@ -117,16 +117,14 @@ Para cada ideia inclua:
 
 
 def analyze_profile(profile: dict, posts: list, gemini_key: str) -> str:
-    genai.configure(api_key=gemini_key)
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    client = genai.Client(api_key=gemini_key)
     prompt = _build_analysis_prompt(profile, posts)
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
     return response.text
 
 
 def generate_content_ideas(profile: dict, posts: list, topic: str, gemini_key: str) -> str:
-    genai.configure(api_key=gemini_key)
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    client = genai.Client(api_key=gemini_key)
 
     username = profile.get("username", "")
     followers = profile.get("followersCount", 0)
@@ -153,5 +151,5 @@ Para cada ideia, inclua:
 - Sugestão de legenda com CTA
 - 10 hashtags relevantes
 """
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
     return response.text
