@@ -94,14 +94,24 @@ Com base nesses dados, forneça uma análise completa estruturada EXATAMENTE ass
 ## 🎯 Tipo de Conteúdo que Mais Engaja
 [Analise qual formato (Reel, Imagem, Carrossel) traz mais resultado e por quê]
 
-## 💡 10 Ideias de Novos Conteúdos
-[Liste 10 ideias específicas e detalhadas de posts/reels baseadas no que já funciona para este perfil]
+## 🎯 Tipo de Conteúdo que Mais Engaja
+[Analise qual formato (Reel, Imagem, Carrossel) traz mais resultado e por quê, com base nos dados acima]
+
+## 💡 10 Ideias de Novos Conteúdos (baseadas nos posts reais)
+Para cada ideia, inspire-se DIRETAMENTE nos posts de maior engajamento listados acima.
+Mencione explicitamente qual post inspirou a ideia (ex: "inspirado no reel sobre X que teve Y curtidas").
+Para cada ideia inclua:
+- **Formato:** Reel / Carrossel / Foto
+- **Gancho de abertura:** (primeira frase que prende atenção)
+- **Estrutura:** passo a passo do conteúdo
+- **Legenda sugerida** com CTA
+- **Hashtags:** 8 hashtags relevantes
 
 ## 📅 Recomendações Estratégicas
-[3-5 recomendações práticas para crescer o perfil com base nos dados]
+[3-5 recomendações práticas e específicas para crescer este perfil, baseadas nos dados]
 
 ## #️⃣ Análise de Hashtags
-[Quais hashtags aparecem nos posts de maior engajamento? Sugestões de novas hashtags]
+[Quais hashtags aparecem nos posts de maior engajamento? Sugestões de novas hashtags para testar]
 """
     return prompt
 

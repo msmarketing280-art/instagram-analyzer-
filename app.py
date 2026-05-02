@@ -63,7 +63,7 @@ with st.sidebar:
         value=_secret("APIFY_TOKEN"),
         help="Encontre em apify.com → Settings → Integrations",
     )
-    anthropic_key = st.text_input(
+    gemini_key = st.text_input(
         "Gemini API Key",
         type="password",
         value=_secret("GEMINI_API_KEY"),
@@ -97,7 +97,7 @@ with col_btn:
 
 # ── Run analysis ──────────────────────────────────────────────────────────────
 if analyze_btn:
-    if not apify_token or not anthropic_key:
+    if not apify_token or not gemini_key:
         st.error("Por favor, insira as API keys no painel lateral.")
         st.stop()
     if not username_input.strip():
@@ -115,12 +115,13 @@ if analyze_btn:
             st.error(f"Erro ao coletar dados: {e}")
             st.stop()
 
-    with st.spinner("Analisando com Claude..."):
+    with st.spinner("Analisando com Gemini IA..."):
         try:
-            analysis = analyze_profile(profile, posts, anthropic_key)
+            analysis = analyze_profile(profile, posts, gemini_key)
             st.session_state["analysis"] = analysis
+            st.session_state["gemini_key"] = gemini_key
         except Exception as e:
-            st.error(f"Erro na análise com Claude: {e}")
+            st.error(f"Erro na análise com Gemini: {e}")
             st.stop()
 
 # ── Display results if available ──────────────────────────────────────────────
@@ -166,11 +167,20 @@ if "profile" in st.session_state:
             )
 
     # ── Tabs ──────────────────────────────────────────────────────────────────
-    tab1, tab2, tab3, tab4 = st.tabs(["📈 Análise IA", "🏆 Top Posts", "📊 Gráficos", "💡 Gerador de Ideias"])
+    tab1, tab2, tab3, tab4 = st.tabs(["📈 Análise IA + Ideias", "🏆 Top Posts", "📊 Gráficos", "💡 Ideias por Tema"])
 
     # ── Tab 1: AI Analysis ────────────────────────────────────────────────────
     with tab1:
         if analysis:
+            # Botão de download
+            st.download_button(
+                label="⬇️ Baixar análise completa (.txt)",
+                data=analysis,
+                file_name=f"analise_{username}_{datetime.now().strftime('%Y%m%d_%H%M')}.txt",
+                mime="text/plain",
+                use_container_width=False,
+            )
+            st.markdown("---")
             st.markdown(analysis)
         else:
             st.info("Análise não disponível.")
@@ -284,20 +294,27 @@ if "profile" in st.session_state:
                 fig_tags.update_layout(yaxis={"categoryorder": "total ascending"})
                 st.plotly_chart(fig_tags, use_container_width=True)
 
-    # ── Tab 4: Content Ideas Generator ───────────────────────────────────────
+    # ── Tab 4: Content Ideas by Topic ────────────────────────────────────────
     with tab4:
-        st.markdown("### Gerador de Ideias de Conteúdo")
-        st.markdown("Descreva um tema ou assunto e a IA vai criar ideias personalizadas para este perfil.")
+        st.markdown("### Ideias de Conteúdo por Tema Específico")
+        st.markdown("Quer explorar um tema em particular? A IA cria ideias personalizadas para este perfil.")
 
         topic = st.text_input("Tema do conteúdo", placeholder="Ex: receitas saudáveis, dicas de produtividade, moda verão...")
 
-        if st.button("✨ Gerar Ideias", type="primary"):
+        if st.button("✨ Gerar Ideias por Tema", type="primary"):
             if not topic.strip():
                 st.warning("Digite um tema.")
             else:
-                with st.spinner("Gerando ideias com Claude..."):
+                _gkey = st.session_state.get("gemini_key", gemini_key)
+                with st.spinner("Gerando ideias com Gemini..."):
                     try:
-                        ideas = generate_content_ideas(profile, posts, topic, anthropic_key)
+                        ideas = generate_content_ideas(profile, posts, topic, _gkey)
+                        st.download_button(
+                            label="⬇️ Baixar ideias (.txt)",
+                            data=ideas,
+                            file_name=f"ideias_{username}_{topic[:20]}_{datetime.now().strftime('%Y%m%d')}.txt",
+                            mime="text/plain",
+                        )
                         st.markdown(ideas)
                     except Exception as e:
                         st.error(f"Erro ao gerar ideias: {e}")
