@@ -1,4 +1,5 @@
 import json
+import time
 import requests
 
 
@@ -6,14 +7,25 @@ GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0
 
 
 def _ask(prompt: str, api_key: str) -> str:
-    resp = requests.post(
-        GEMINI_URL,
-        params={"key": api_key},
-        json={"contents": [{"parts": [{"text": prompt}]}]},
-        timeout=120,
-    )
-    resp.raise_for_status()
-    return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+    for attempt in range(3):
+        resp = requests.post(
+            GEMINI_URL,
+            params={"key": api_key},
+            json={
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"maxOutputTokens": 8192},
+            },
+            timeout=120,
+        )
+        if resp.status_code == 429:
+            wait = 30 * (attempt + 1)
+            time.sleep(wait)
+            continue
+        # Raise sem expor a chave na mensagem de erro
+        if not resp.ok:
+            raise Exception(f"Gemini API erro {resp.status_code}: {resp.json().get('error', {}).get('message', 'Erro desconhecido')}")
+        return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+    raise Exception("Limite de requisições atingido. Aguarde 1 minuto e tente novamente.")
 
 
 def _top_posts(posts: list, n: int = 5) -> list:
@@ -55,11 +67,12 @@ def analyze_profile(profile: dict, posts: list, gemini_key: str) -> str:
         for p in top5
     ], ensure_ascii=False, indent=2)
 
+    # Limitamos a 20 posts no resumo geral para não exceder o limite de tokens
     all_json = json.dumps([
         {"tipo": p["type"], "curtidas": p["likes"], "comentarios": p["comments"],
-         "views": p["views"], "legenda": (p["caption"] or "")[:120],
-         "hashtags": p["hashtags"][:8], "data": (p["timestamp"] or "")[:10]}
-        for p in posts
+         "views": p["views"], "legenda": (p["caption"] or "")[:80],
+         "hashtags": p["hashtags"][:5], "data": (p["timestamp"] or "")[:10]}
+        for p in posts[:20]
     ], ensure_ascii=False, indent=2)
 
     prompt = f"""Você é um analista sênior de marketing digital especializado em Instagram.

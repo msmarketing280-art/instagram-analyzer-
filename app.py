@@ -150,7 +150,10 @@ if analyze_btn:
             analysis = analyze_profile(profile, posts, gemini_key)
             st.session_state["analysis"] = analysis
         except Exception as e:
-            st.error(f"Erro na análise: {e}")
+            msg = str(e)
+            # Remove a chave da mensagem de erro caso apareça
+            msg = msg.replace(gemini_key, "***")
+            st.error(f"Erro na análise: {msg}")
             st.stop()
 
     with st.spinner("✍️ Gerando criativos com roteiro..."):
@@ -158,7 +161,8 @@ if analyze_btn:
             creatives = generate_creatives(profile, posts, gemini_key)
             st.session_state["creatives"] = creatives
         except Exception as e:
-            st.error(f"Erro ao gerar criativos: {e}")
+            msg = str(e).replace(gemini_key, "***")
+            st.error(f"Erro ao gerar criativos: {msg}")
             st.stop()
 
     st.success("✅ Análise concluída!")
