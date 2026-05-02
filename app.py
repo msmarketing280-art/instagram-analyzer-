@@ -5,9 +5,27 @@ import pandas as pd
 import plotly.express as px
 from datetime import datetime
 from pathlib import Path
+from fpdf import FPDF
 
 from scraper import get_profile_and_posts, parse_posts
 from analyzer import analyze_profile, generate_creatives, generate_ideas_by_topic
+
+
+def make_pdf(title: str, content: str) -> bytes:
+    pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.cell(0, 10, title, ln=True)
+    pdf.set_font("Helvetica", "", 11)
+    pdf.ln(4)
+    for line in content.splitlines():
+        # Remove markdown bold/italic markers for clean PDF
+        clean = line.replace("**", "").replace("*", "").replace("##", "").replace("#", "")
+        # Encode to latin-1, replacing unsupported chars
+        safe = clean.encode("latin-1", errors="replace").decode("latin-1")
+        pdf.multi_cell(0, 7, safe)
+    return pdf.output()
 
 # ── Persistent config ─────────────────────────────────────────────────────────
 CONFIG_FILE = Path(__file__).parent / ".keys.json"
@@ -199,12 +217,25 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 # ── Tab 1: Análise ────────────────────────────────────────────────────────────
 with tab1:
     if analysis:
-        st.download_button(
-            "⬇️ Baixar análise (.txt)",
-            data=analysis,
-            file_name=f"analise_{username}_{datetime.now().strftime('%Y%m%d_%H%M')}.txt",
-            mime="text/plain",
-        )
+        stamp = datetime.now().strftime('%Y%m%d_%H%M')
+        d1, d2 = st.columns(2)
+        with d1:
+            st.download_button(
+                "⬇️ Baixar análise (.txt)",
+                data=analysis,
+                file_name=f"analise_{username}_{stamp}.txt",
+                mime="text/plain",
+                use_container_width=True,
+            )
+        with d2:
+            pdf_bytes = make_pdf(f"Análise do Perfil @{username}", analysis)
+            st.download_button(
+                "⬇️ Baixar análise (.pdf)",
+                data=bytes(pdf_bytes),
+                file_name=f"analise_{username}_{stamp}.pdf",
+                mime="application/pdf",
+                use_container_width=True,
+            )
         st.markdown("---")
         st.markdown(analysis)
     else:
@@ -213,12 +244,25 @@ with tab1:
 # ── Tab 2: Criativos com roteiro ──────────────────────────────────────────────
 with tab2:
     if creatives:
-        st.download_button(
-            "⬇️ Baixar criativos + roteiros (.txt)",
-            data=creatives,
-            file_name=f"criativos_{username}_{datetime.now().strftime('%Y%m%d_%H%M')}.txt",
-            mime="text/plain",
-        )
+        stamp = datetime.now().strftime('%Y%m%d_%H%M')
+        d1, d2 = st.columns(2)
+        with d1:
+            st.download_button(
+                "⬇️ Baixar criativos (.txt)",
+                data=creatives,
+                file_name=f"criativos_{username}_{stamp}.txt",
+                mime="text/plain",
+                use_container_width=True,
+            )
+        with d2:
+            pdf_bytes = make_pdf(f"Criativos + Roteiros @{username}", creatives)
+            st.download_button(
+                "⬇️ Baixar criativos (.pdf)",
+                data=bytes(pdf_bytes),
+                file_name=f"criativos_{username}_{stamp}.pdf",
+                mime="application/pdf",
+                use_container_width=True,
+            )
         st.markdown("---")
         st.markdown(creatives)
     else:
@@ -318,11 +362,25 @@ with tab5:
                     st.error(f"Erro: {e}")
 
     if st.session_state.get("topic_ideas"):
-        st.download_button(
-            "⬇️ Baixar roteiros (.txt)",
-            data=st.session_state["topic_ideas"],
-            file_name=f"roteiros_{username}_{st.session_state.get('topic_name','tema')[:20]}_{datetime.now().strftime('%Y%m%d')}.txt",
-            mime="text/plain",
-        )
+        topic_name = st.session_state.get("topic_name", "tema")[:20]
+        stamp = datetime.now().strftime('%Y%m%d')
+        d1, d2 = st.columns(2)
+        with d1:
+            st.download_button(
+                "⬇️ Baixar roteiros (.txt)",
+                data=st.session_state["topic_ideas"],
+                file_name=f"roteiros_{username}_{topic_name}_{stamp}.txt",
+                mime="text/plain",
+                use_container_width=True,
+            )
+        with d2:
+            pdf_bytes = make_pdf(f"Roteiros: {topic_name} — @{username}", st.session_state["topic_ideas"])
+            st.download_button(
+                "⬇️ Baixar roteiros (.pdf)",
+                data=bytes(pdf_bytes),
+                file_name=f"roteiros_{username}_{topic_name}_{stamp}.pdf",
+                mime="application/pdf",
+                use_container_width=True,
+            )
         st.markdown("---")
         st.markdown(st.session_state["topic_ideas"])
