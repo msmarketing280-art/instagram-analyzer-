@@ -108,7 +108,7 @@ Com base nesses dados, forneça uma análise completa estruturada EXATAMENTE ass
 
 def analyze_profile(profile: dict, posts: list, gemini_key: str) -> str:
     genai.configure(api_key=gemini_key)
-    model = genai.GenerativeModel("gemini-2.0-flash")
+    model = genai.GenerativeModel("gemini-1.5-flash")
     prompt = _build_analysis_prompt(profile, posts)
     response = model.generate_content(prompt)
     return response.text
@@ -116,7 +116,7 @@ def analyze_profile(profile: dict, posts: list, gemini_key: str) -> str:
 
 def generate_content_ideas(profile: dict, posts: list, topic: str, gemini_key: str) -> str:
     genai.configure(api_key=gemini_key)
-    model = genai.GenerativeModel("gemini-2.0-flash")
+    model = genai.GenerativeModel("gemini-1.5-flash")
 
     username = profile.get("username", "")
     followers = profile.get("followersCount", 0)
