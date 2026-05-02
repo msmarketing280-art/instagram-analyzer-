@@ -205,6 +205,38 @@ for col, value, label in [
             unsafe_allow_html=True,
         )
 
+# ── Download completo no topo ─────────────────────────────────────────────────
+if analysis or creatives:
+    st.markdown("### ⬇️ Download Completo")
+    full_text = ""
+    if analysis:
+        full_text += f"{'='*60}\nANÁLISE DO PERFIL @{username}\n{'='*60}\n\n{analysis}\n\n"
+    if creatives:
+        full_text += f"{'='*60}\nCRIATIVOS + ROTEIROS @{username}\n{'='*60}\n\n{creatives}\n\n"
+
+    stamp = datetime.now().strftime('%Y%m%d_%H%M')
+    dc1, dc2 = st.columns(2)
+    with dc1:
+        st.download_button(
+            "⬇️ Baixar tudo (.txt)",
+            data=full_text,
+            file_name=f"analise_completa_{username}_{stamp}.txt",
+            mime="text/plain",
+            use_container_width=True,
+            type="primary",
+        )
+    with dc2:
+        pdf_bytes = make_pdf(f"Análise Completa @{username}", full_text)
+        st.download_button(
+            "⬇️ Baixar tudo (.pdf)",
+            data=bytes(pdf_bytes),
+            file_name=f"analise_completa_{username}_{stamp}.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+            type="primary",
+        )
+    st.markdown("---")
+
 # ── Abas ──────────────────────────────────────────────────────────────────────
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📈 Análise do Perfil",
