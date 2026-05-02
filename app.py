@@ -1,12 +1,32 @@
 import os
+import json
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
+from pathlib import Path
 
 from scraper import get_profile_and_posts, parse_posts
 from analyzer import analyze_profile, generate_content_ideas
+
+# ── Persistent config ─────────────────────────────────────────────────────────
+CONFIG_FILE = Path(__file__).parent / ".keys.json"
+
+def load_keys() -> dict:
+    if CONFIG_FILE.exists():
+        try:
+            return json.loads(CONFIG_FILE.read_text())
+        except Exception:
+            return {}
+    return {}
+
+def save_keys(apify: str, gemini: str):
+    CONFIG_FILE.write_text(json.dumps({"APIFY_TOKEN": apify, "GEMINI_API_KEY": gemini}))
+
+def delete_keys():
+    if CONFIG_FILE.exists():
+        CONFIG_FILE.unlink()
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -46,37 +66,51 @@ st.markdown(
 )
 
 # ── Sidebar: credentials ──────────────────────────────────────────────────────
+_saved = load_keys()
+
 with st.sidebar:
     st.title("⚙️ Configurações")
     st.markdown("---")
 
-    def _secret(key: str) -> str:
-        """Reads from Streamlit secrets (cloud) or env vars (local)."""
-        try:
-            return st.secrets.get(key, os.getenv(key, ""))
-        except Exception:
-            return os.getenv(key, "")
+    keys_saved = bool(_saved.get("APIFY_TOKEN") and _saved.get("GEMINI_API_KEY"))
+
+    if keys_saved:
+        st.success("🔐 Chaves salvas")
 
     apify_token = st.text_input(
         "Apify API Token",
         type="password",
-        value=_secret("APIFY_TOKEN"),
+        value=_saved.get("APIFY_TOKEN", ""),
+        placeholder="Cole sua chave aqui",
         help="Encontre em apify.com → Settings → Integrations",
     )
     gemini_key = st.text_input(
         "Gemini API Key",
         type="password",
-        value=_secret("GEMINI_API_KEY"),
+        value=_saved.get("GEMINI_API_KEY", ""),
+        placeholder="Cole sua chave aqui",
         help="Encontre em aistudio.google.com → Get API key (gratuito)",
     )
-    max_posts = st.slider("Máximo de posts a analisar", 10, 50, 30, 5)
+
+    col_save, col_del = st.columns(2)
+    with col_save:
+        if st.button("💾 Salvar", use_container_width=True):
+            if apify_token and gemini_key:
+                save_keys(apify_token, gemini_key)
+                st.success("Salvo!")
+                st.rerun()
+            else:
+                st.warning("Preencha as duas chaves.")
+    with col_del:
+        if st.button("🗑️ Remover", use_container_width=True):
+            delete_keys()
+            st.info("Chaves removidas.")
+            st.rerun()
 
     st.markdown("---")
+    max_posts = st.slider("Máximo de posts a analisar", 10, 50, 30, 5)
+    st.markdown("---")
     st.markdown(
-        "**Como usar:**\n"
-        "1. Insira suas API keys\n"
-        "2. Digite o @ do perfil\n"
-        "3. Clique em Analisar\n\n"
         "[Criar conta Apify](https://apify.com) · "
         "[Pegar chave Gemini](https://aistudio.google.com)"
     )
