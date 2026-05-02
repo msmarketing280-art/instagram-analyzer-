@@ -123,7 +123,31 @@ with col_input:
 with col_btn:
     analyze_btn = st.button("🔍 Analisar", use_container_width=True, type="primary")
 
+# Botão para reanalisar sem buscar Apify de novo (útil quando Gemini deu erro)
+if "profile" in st.session_state and not (st.session_state.get("analysis") and st.session_state.get("creatives")):
+    retry_btn = st.button("🔄 Gerar análise IA (sem buscar Instagram novamente)", use_container_width=True)
+else:
+    retry_btn = False
+
 # ── Executar análise ──────────────────────────────────────────────────────────
+def _run_ai(profile, posts, gemini_key):
+    with st.spinner("🧠 Analisando perfil com Gemini..."):
+        try:
+            st.session_state["analysis"] = analyze_profile(profile, posts, gemini_key)
+        except Exception as e:
+            st.warning(f"⚠️ Análise: {str(e).replace(gemini_key, '***')}")
+
+    with st.spinner("✍️ Gerando criativos com roteiro..."):
+        try:
+            st.session_state["creatives"] = generate_creatives(profile, posts, gemini_key)
+        except Exception as e:
+            st.warning(f"⚠️ Criativos: {str(e).replace(gemini_key, '***')}")
+
+    if st.session_state.get("analysis") or st.session_state.get("creatives"):
+        st.success("✅ Concluído!")
+    else:
+        st.error("Não foi possível gerar. Aguarde 1 minuto e tente novamente (limite do Gemini grátis).")
+
 if analyze_btn:
     if not apify_token or not gemini_key:
         st.error("Insira as API keys no painel lateral e clique em 💾 Salvar.")
@@ -134,37 +158,27 @@ if analyze_btn:
 
     with st.spinner("🔄 Coletando dados do Instagram via Apify..."):
         try:
-            raw   = get_profile_and_posts(username_input, apify_token, max_posts)
+            raw     = get_profile_and_posts(username_input, apify_token, max_posts)
             profile = raw["profile"]
             posts   = parse_posts(raw["posts"])
-            st.session_state.update({"profile": profile, "posts": posts,
-                                     "analysis": None, "creatives": None,
-                                     "gemini_key": gemini_key,
-                                     "username": profile.get("username", username_input.lstrip("@"))})
+            st.session_state.update({
+                "profile": profile, "posts": posts,
+                "analysis": None, "creatives": None,
+                "gemini_key": gemini_key,
+                "username": profile.get("username", username_input.lstrip("@")),
+            })
         except Exception as e:
             st.error(f"Erro ao coletar dados: {e}")
             st.stop()
 
-    with st.spinner("🧠 Analisando perfil com Gemini..."):
-        try:
-            analysis = analyze_profile(profile, posts, gemini_key)
-            st.session_state["analysis"] = analysis
-        except Exception as e:
-            msg = str(e).replace(gemini_key, "***")
-            st.warning(f"⚠️ Erro na análise: {msg}")
+    _run_ai(profile, posts, gemini_key)
 
-    with st.spinner("✍️ Gerando criativos com roteiro..."):
-        try:
-            creatives = generate_creatives(profile, posts, gemini_key)
-            st.session_state["creatives"] = creatives
-        except Exception as e:
-            msg = str(e).replace(gemini_key, "***")
-            st.warning(f"⚠️ Erro ao gerar criativos: {msg}")
-
-    if st.session_state.get("analysis") or st.session_state.get("creatives"):
-        st.success("✅ Concluído! Role para baixo para ver os resultados e fazer download.")
-    else:
-        st.error("Não foi possível gerar a análise. Verifique suas chaves e tente novamente.")
+if retry_btn:
+    _run_ai(
+        st.session_state["profile"],
+        st.session_state["posts"],
+        st.session_state.get("gemini_key", gemini_key),
+    )
 
 # ── Exibir resultados ─────────────────────────────────────────────────────────
 if "profile" not in st.session_state:
@@ -208,7 +222,7 @@ for col, value, label in [
             unsafe_allow_html=True,
         )
 
-# ── Download completo no topo ─────────────────────────────────────────────────
+# ── Download completo — aparece logo após as métricas ────────────────────────
 if analysis or creatives:
     st.markdown("### ⬇️ Download Completo")
     full_text = ""
