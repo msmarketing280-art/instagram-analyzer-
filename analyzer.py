@@ -1,5 +1,5 @@
 import json
-import anthropic
+import google.generativeai as genai
 
 
 SYSTEM_PROMPT = """Você é um especialista em marketing digital e criação de conteúdo para Instagram.
@@ -106,23 +106,18 @@ Com base nesses dados, forneça uma análise completa estruturada EXATAMENTE ass
     return prompt
 
 
-def analyze_profile(profile: dict, posts: list, anthropic_key: str) -> str:
-    """Sends profile + posts data to Claude and returns the full analysis."""
-    client = anthropic.Anthropic(api_key=anthropic_key)
+def analyze_profile(profile: dict, posts: list, gemini_key: str) -> str:
+    genai.configure(api_key=gemini_key)
+    model = genai.GenerativeModel("gemini-2.0-flash")
     prompt = _build_analysis_prompt(profile, posts)
-
-    message = client.messages.create(
-        model="claude-opus-4-6",
-        max_tokens=4096,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    return message.content[0].text
+    response = model.generate_content(prompt)
+    return response.text
 
 
-def generate_content_ideas(profile: dict, posts: list, topic: str, anthropic_key: str) -> str:
-    """Generates targeted content ideas for a specific topic."""
-    client = anthropic.Anthropic(api_key=anthropic_key)
+def generate_content_ideas(profile: dict, posts: list, topic: str, gemini_key: str) -> str:
+    genai.configure(api_key=gemini_key)
+    model = genai.GenerativeModel("gemini-2.0-flash")
+
     username = profile.get("username", "")
     followers = profile.get("followersCount", 0)
     top_types = {}
@@ -132,6 +127,8 @@ def generate_content_ideas(profile: dict, posts: list, topic: str, anthropic_key
     best_format = max(top_types, key=top_types.get) if top_types else "Reel"
 
     prompt = f"""
+{SYSTEM_PROMPT}
+
 Perfil @{username} com {followers:,} seguidores.
 Formato que mais engaja: {best_format}
 Tema solicitado: "{topic}"
@@ -146,10 +143,5 @@ Para cada ideia, inclua:
 - Sugestão de legenda com CTA
 - 10 hashtags relevantes
 """
-    message = client.messages.create(
-        model="claude-opus-4-6",
-        max_tokens=2048,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    return message.content[0].text
+    response = model.generate_content(prompt)
+    return response.text

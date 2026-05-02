@@ -64,10 +64,10 @@ with st.sidebar:
         help="Encontre em apify.com → Settings → Integrations",
     )
     anthropic_key = st.text_input(
-        "Anthropic API Key",
+        "Gemini API Key",
         type="password",
-        value=_secret("ANTHROPIC_API_KEY"),
-        help="Encontre em console.anthropic.com → API Keys",
+        value=_secret("GEMINI_API_KEY"),
+        help="Encontre em aistudio.google.com → Get API key (gratuito)",
     )
     max_posts = st.slider("Máximo de posts a analisar", 10, 50, 30, 5)
 
@@ -78,7 +78,7 @@ with st.sidebar:
         "2. Digite o @ do perfil\n"
         "3. Clique em Analisar\n\n"
         "[Criar conta Apify](https://apify.com) · "
-        "[Pegar chave Anthropic](https://console.anthropic.com)"
+        "[Pegar chave Gemini](https://aistudio.google.com)"
     )
 
 # ── Main UI ───────────────────────────────────────────────────────────────────
