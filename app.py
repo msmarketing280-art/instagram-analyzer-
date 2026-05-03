@@ -38,8 +38,12 @@ def load_keys() -> dict:
             return {}
     return {}
 
-def save_keys(apify: str, gemini: str):
-    CONFIG_FILE.write_text(json.dumps({"APIFY_TOKEN": apify, "GEMINI_API_KEY": gemini}))
+def save_keys(surge: str, gemini: str, base_url: str):
+    CONFIG_FILE.write_text(json.dumps({
+        "SURGE_TOKEN": surge,
+        "GEMINI_API_KEY": gemini,
+        "SURGE_BASE_URL": base_url,
+    }))
 
 def delete_keys():
     if CONFIG_FILE.exists():
@@ -75,14 +79,19 @@ with st.sidebar:
     st.title("⚙️ Configurações")
     st.markdown("---")
 
-    if _saved.get("APIFY_TOKEN") and _saved.get("GEMINI_API_KEY"):
+    if _saved.get("SURGE_TOKEN") and _saved.get("GEMINI_API_KEY"):
         st.success("🔐 Chaves salvas")
 
-    apify_token = st.text_input(
-        "Apify API Token", type="password",
-        value=_saved.get("APIFY_TOKEN", ""),
-        placeholder="Cole sua chave aqui",
-        help="apify.com → Settings → Integrations",
+    surge_token = st.text_input(
+        "SurgeIG Token", type="password",
+        value=_saved.get("SURGE_TOKEN", ""),
+        placeholder="surge_xxx...",
+        help="SurgeIG → Configurações → API Tokens",
+    )
+    surge_base_url = st.text_input(
+        "SurgeIG URL",
+        value=_saved.get("SURGE_BASE_URL", "http://localhost:3000"),
+        help="URL base do SurgeIG (ex: http://localhost:3000)",
     )
     gemini_key = st.text_input(
         "Gemini API Key", type="password",
@@ -94,12 +103,12 @@ with st.sidebar:
     col_save, col_del = st.columns(2)
     with col_save:
         if st.button("💾 Salvar", use_container_width=True):
-            if apify_token and gemini_key:
-                save_keys(apify_token, gemini_key)
+            if surge_token and gemini_key:
+                save_keys(surge_token, gemini_key, surge_base_url)
                 st.success("Salvo!")
                 st.rerun()
             else:
-                st.warning("Preencha as duas chaves.")
+                st.warning("Preencha o SurgeIG Token e a Gemini Key.")
     with col_del:
         if st.button("🗑️ Remover", use_container_width=True):
             delete_keys()
@@ -108,7 +117,7 @@ with st.sidebar:
     st.markdown("---")
     max_posts = st.slider("Posts a analisar", 10, 50, 30, 5)
     st.markdown("---")
-    st.markdown("[Criar conta Apify](https://apify.com) · [Chave Gemini](https://aistudio.google.com)")
+    st.markdown("[Chave Gemini gratuita](https://aistudio.google.com)")
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 st.title("📊 Instagram Analyzer")
@@ -128,6 +137,9 @@ if "profile" in st.session_state and not (st.session_state.get("analysis") and s
     retry_btn = st.button("🔄 Gerar análise IA (sem buscar Instagram novamente)", use_container_width=True)
 else:
     retry_btn = False
+
+surge_token  = locals().get("surge_token", _saved.get("SURGE_TOKEN", ""))
+surge_base_url = locals().get("surge_base_url", _saved.get("SURGE_BASE_URL", "http://localhost:3000"))
 
 # ── Executar análise ──────────────────────────────────────────────────────────
 def _run_ai(profile, posts, gemini_key):
@@ -149,16 +161,16 @@ def _run_ai(profile, posts, gemini_key):
         st.error("Não foi possível gerar. Aguarde 1 minuto e tente novamente (limite do Gemini grátis).")
 
 if analyze_btn:
-    if not apify_token or not gemini_key:
-        st.error("Insira as API keys no painel lateral e clique em 💾 Salvar.")
+    if not surge_token or not gemini_key:
+        st.error("Insira o SurgeIG Token e a Gemini Key no painel lateral e clique em 💾 Salvar.")
         st.stop()
     if not username_input.strip():
         st.error("Digite um nome de usuário.")
         st.stop()
 
-    with st.spinner("🔄 Coletando dados do Instagram via Apify..."):
+    with st.spinner("🔄 Coletando dados do Instagram via SurgeIG..."):
         try:
-            raw     = get_profile_and_posts(username_input, apify_token, max_posts)
+            raw     = get_profile_and_posts(username_input, surge_token, max_posts, surge_base_url)
             profile = raw["profile"]
             posts   = parse_posts(raw["posts"])
             st.session_state.update({
